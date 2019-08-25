@@ -1,0 +1,82 @@
+void Duty_1ms()
+{
+	//----------------------------------//
+	
+	//姿态解算数据滤波
+	postureCaculate_DataFilter_1ms_();
+	
+	//----------------------------------//
+}
+
+void Duty_2ms()
+{	
+	//---------------------------------------//
+	
+	//接收机原始数据
+	extern u16 Rc_Pwm_In[8];
+	remoterRecive_GetData_2ms_((s16*)Rc_Pwm_In);
+	//接收机检查模式任务
+	remoterRecive_FlyModDuty_2ms_();
+	
+	//姿态解算数据获取
+	extern MPU6050_STRUCT mpu6050;
+	postureCaculate_GetData_2ms_(mpu6050.Gyro_I16.x, mpu6050.Gyro_I16.y, mpu6050.Gyro_I16.z, mpu6050.Acc_I16.x, mpu6050.Acc_I16.y, mpu6050.Acc_I16.z, 0, 0, 0);
+	//姿态解算计算角度
+	postureCaculate_CaculatePosture_2ms_();
+	
+	//姿态控制获取数据
+	postureCtrl_GetData_2ms_(postureCaculateData.postureAngle.PITCH, postureCaculateData.postureAngle.ROLL, Yaw, 
+			-1*(postureCaculateData.gyro_filter_value.y ),
+			(postureCaculateData.gyro_filter_value.x),
+			-1*postureCaculateData.gyro_filter_value.z);
+
+	//位置解算速度滤波
+	posFilter_GetXYZSpeed_2ms_();
+	
+	//定高数据获取
+	extern posFilter_DataStruct posFilterData;
+	hightCtrl_GetData_2ms_(posFilterData.posZ_filter_value*0.95, posFilterData.speedZ_predict_value*0.22);
+	
+	//位置控制数据传递
+	posXYCtrl_GetData_2ms_(posFilterData.posX_filter_value, -1*posFilterData.posY_filter_value, posFilterData.speedX_predict_value*0.0099, posFilterData.speedY_predict_value*0.0099);
+	//位置控制计算
+	posXYCtrl_targetAngleCaculate_2ms_();
+	
+	//openmv协议解包
+	openMv_Decode_2ms_();
+	
+	//---------------------------------------//
+}
+
+void Duty_5ms()
+{
+	//---------------------------------------//
+	
+	//速度解算
+	posFilter_DataDispose_5ms_();
+	
+	//---------------------------------------//
+}
+
+
+void Duty_10ms()
+{
+	//---------------------------------------//
+		//激光测距协议解码
+		skz_DataDecode_10ms_();
+	
+		//位置解算数据获取
+		extern my_skz_data skz_data;
+		extern openmv_struct openmv;
+		extern xyz_f_t acc_ng;
+		extern skz_DataStruct skzData;
+		posFilter_GetData_10ms_(openMvData.x, openMvData.y*-1, skzData.distance, -1*acc_ng.y, acc_ng.x, acc_ng.z);
+	
+	//---------------------------------------//
+}
+
+
+
+
+
+
